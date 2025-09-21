@@ -117,7 +117,7 @@ local propertyHandlers:{[string]:(string)->string} = {
 	['color'] = function(value)
 		local r, g, b = parseColor(value)
 		if not r then error("Invalid color value, please use either RGB, HEX, or a color name") end
-		
+
 		return `\t\tobj.TextColor3 = Color3.fromRGB({r}, {g}, {b})\n`
 	end,
 
@@ -167,14 +167,14 @@ local propertyHandlers:{[string]:(string)->string} = {
 		end
 		return `\t\tlocal corner = obj:FindFirstChildWhichIsA("UICorner") or Instance.new("UICorner", obj)\n\t\tcorner.CornerRadius = UDim.new(0, {borderRadius})\n`
 	end,
-	
+
 	['border-color'] = function(value)
 		local r, g, b = parseColor(value)
 		if not r then error("Invalid border-color value, please use either RGB, HEX, or a color name") end
 
 		return `\t\tlocal stroke = obj:FindFirstChildWhichIsA("UIStroke") or Instance.new("UIStroke", obj)\n\t\tstroke.Color = Color3.fromRGB({r}, {g}, {b})\n`
 	end,
-	
+
 	['padding'] = function(value)
 		local paddingAll = value:match("(%d+)px")
 		if not paddingAll then
@@ -203,7 +203,7 @@ local propertyHandlers:{[string]:(string)->string} = {
 	['TextColor3'] = function(value)
 		local r, g, b = parseColor(value)
 		if not r then error("Invalid TextColor3 value, please use either RGB, HEX, or a color name") end
-		
+
 		return `\t\tobj.TextColor3 = Color3.fromRGB({r}, {g}, {b})\n`
 	end,
 
@@ -252,7 +252,7 @@ local function generateLuau(parsedCSS)
 			luaCode = luaCode..string.format([[for _, obj in ipairs(%s:GetDescendants()) do]], uiPath)..'\n'
 			luaCode = luaCode..`\t\tif obj.Name == "{selector}" then\n`
 		end
-		
+
 		for _,style in ipairs(properties) do
 			local handler = propertyHandlers[style.property]
 			if handler then
@@ -266,15 +266,19 @@ local function generateLuau(parsedCSS)
 
 		luaCode = luaCode.."\t\tend\nend\n"
 	end
-	
+
 	if luaCode == '' then warn("No CSS input found, is your CSS file empty?") end
 
 	return luaCode
 end
 
 --[[ Compile ]]
+local startTime:number = os.clock()
 local parsedCSS = parseCSS(cssText)
 local generatedCode = generateLuau(parsedCSS)
+local endTime:number = os.clock()
 
 --[[ Output ]]
 warn(generatedCode)
+
+print(string.format("CSS compilation completed in %.7f seconds", (endTime - startTime)))
