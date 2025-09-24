@@ -2,13 +2,12 @@
 
 --[[
 	CSS To Luau Compiler
-	Version 1.0
+	Version 1.0.0
 	
 	Parses CSS-like input into Luau styling code for Roblox.
 	
 	Made by:
 	- Daxyzeus
-	- shykuni
 ]]
 
 local uiPath = 'game:GetService("StarterGui").ScreenGui'
@@ -16,15 +15,22 @@ local uiPath = 'game:GetService("StarterGui").ScreenGui'
 
 --[[ ⌄ Change this to your CSS file/Desired CSS input ]]
 local cssText:string = [[
-
 	/* Example CSS Code */
-
+	
 	.TextLabel {
-		background-color: red;
-		size: 100, 100;
-		border: 10px;
-		border-radius: 10px
+	  color: #ffffff;
+	  background-color: orange;
+	  size: 200, 100;
+	  border: 4px;
+	  border-radius: 10px;
+	  font-size: 30px
 	}
+	
+	/* 
+	Roblox properties work too
+	since they're backwards-
+	compatible!
+	*/
 ]]
 
 type style = {property:string,value:string}
@@ -182,7 +188,39 @@ local propertyHandlers:{[string]:(string)->string} = {
 		end
 		return `\t\tlocal padding = obj:FindFirstChildWhichIsA("UIPadding") or Instance.new("UIPadding", obj)\n\t\tpadding.PaddingBottom = UDim.new(0, {paddingAll})\n\t\tpadding.PaddingLeft = UDim.new(0, {paddingAll})\n\t\tpadding.PaddingRight = UDim.new(0, {paddingAll})\n\t\tpadding.PaddingTop = UDim.new(0, {paddingAll})\n`
 	end,
-
+	
+	['padding-top'] = function(value)
+		local paddingTop = value:match("(%d+)px")
+		if not paddingTop then
+			error(`Invalid/Unsupported padding-top format: {value}`)
+		end
+		return `\t\tlocal padding = obj:FindFirstChildWhichIsA("UIPadding") or Instance.new("UIPadding", obj)\n\t\tpadding.PaddingTop = UDim.new(0, {paddingTop})\n`
+	end,
+	
+	['padding-left'] = function(value)
+		local paddingLeft = value:match("(%d+)px")
+		if not paddingLeft then
+			error(`Invalid/Unsupported padding-left format: {value}`)
+		end
+		return `\t\tlocal padding = obj:FindFirstChildWhichIsA("UIPadding") or Instance.new("UIPadding", obj)\n\t\tpadding.PaddingLeft = UDim.new(0, {paddingLeft})\n`
+	end,
+	
+	['padding-right'] = function(value)
+		local paddingRight = value:match("(%d+)px")
+		if not paddingRight then
+			error(`Invalid/Unsupported padding-right format: {value}`)
+		end
+		return `\t\tlocal padding = obj:FindFirstChildWhichIsA("UIPadding") or Instance.new("UIPadding", obj)\n\t\tpadding.PaddingRight = UDim.new(0, {paddingRight})\n`
+	end,
+	
+	['padding-bottom'] = function(value)
+		local paddingBottom = value:match("(%d+)px")
+		if not paddingBottom then
+			error(`Invalid/Unsupported padding-bottom format: {value}`)
+		end
+		return `\t\tlocal padding = obj:FindFirstChildWhichIsA("UIPadding") or Instance.new("UIPadding", obj)\n\t\tpadding.PaddingBottom = UDim.new(0, {paddingBottom})\n`
+	end,
+	
 	['z-index'] = function(value)
 		local zIndex = value:match("(%d+)")
 		if not zIndex then
@@ -224,12 +262,12 @@ local function generateLuau(parsedCSS)
 			local idName = selector:sub(2)
 			luaCode = luaCode..`\n--[[ Parsed code for ID: {idName} ]]\n`
 			luaCode = luaCode..string.format([[for _, obj in ipairs(%s:GetDescendants()) do]], uiPath)..'\n'
-			luaCode = luaCode..`\t\tif obj and obj.Name == "{idName}" then\n`
+			luaCode = luaCode..`\tif obj and obj.Name == "{idName}" then\n`
 		elseif selector:match("^%.") then --[[ Class selector (.) ]]
 			local className = selector:sub(2)
 			luaCode = luaCode..`\n--[[ Parsed code for Class: {className} ]]\n` 
 			luaCode = luaCode..string.format([[for _, obj in ipairs(%s:GetDescendants()) do]], uiPath)..'\n'
-			luaCode = luaCode..`\t\tif obj.ClassName == "{className}" then\n`
+			luaCode = luaCode..`\tif obj.ClassName == "{className}" then\n`
 		elseif selector:match("^%*") then --[[ Universal selector (*) ]]
 			local universalName = selector:sub(2)
 			luaCode = luaCode..`\n--[[ Parsed code for Universal: {universalName ~= '' and universalName or "(All)"} ]]\n`
@@ -250,7 +288,7 @@ local function generateLuau(parsedCSS)
 		else --[[ Object selector ]]
 			luaCode = luaCode..`\n--[[ Parsed code for Object: {selector} ]]\n`
 			luaCode = luaCode..string.format([[for _, obj in ipairs(%s:GetDescendants()) do]], uiPath)..'\n'
-			luaCode = luaCode..`\t\tif obj.Name == "{selector}" then\n`
+			luaCode = luaCode..`\tif obj.Name == "{selector}" then\n`
 		end
 
 		for _,style in ipairs(properties) do
@@ -264,7 +302,7 @@ local function generateLuau(parsedCSS)
 			end
 		end
 
-		luaCode = luaCode.."\t\tend\nend\n"
+		luaCode = luaCode.."\tend\nend\n"
 	end
 
 	if luaCode == '' then warn("No CSS input found, is your CSS file empty?") end
